@@ -1,46 +1,27 @@
 import streamlit as st
-import joblib
 import pickle
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.svm import SVC
 
-# Load the trained TF-IDF vectorizer and SVM model
-vector = pickle.load(open('./model/vector.pkl', 'rb'))
-model = pickle.load(open('./model/svm_model.pkl', 'rb'))
+# Function to load the model and vectorizer
+def load_model_and_vectorizer():
+    with open("transformer.pkl", "rb") as f:
+        vectorizer = pickle.load(f)
+    with open("model.pkl", "rb") as f:
+        ensemble_model = pickle.load(f)
+    return vectorizer, ensemble_model
 
-# Define a function for prediction
-def predict_sentiment(review):
-    # Transform the input review using the TF-IDF vectorizer
-    transformed_review = vector.transform([review])
-    # Convert sparse matrix to dense
-    dense_review = transformed_review.toarray()
-    # Predict the sentiment
-    prediction = model.predict(dense_review)
-    # Map the prediction to the corresponding sentiment
-    sentiment_map = {
-        0: "Negative",
-        1: "Neutral",
-        2: "Positive"
-    }
-    return sentiment_map[prediction[0]]
+# Function to get sentiment
+def get_sentiment(reviewbody):
+    vectorizer, ensemble_model = load_model_and_vectorizer()
+    x = vectorizer.transform([reviewbody])
+    # Predicting sentiment
+    y = ensemble_model.predict(x)
+    return y[0]  # Return the first (and only) prediction
 
-# Streamlit app title and description
-st.title('Amazon Product Review Sentiment Analysis')
-st.write('Enter a product review to predict its sentiment (Positive, Neutral, or Negative).')
+# Streamlit app
+st.title("Sentiment Analysis App")
 
-# Text input for the user to enter a review
-user_input = st.text_area('Enter a product review:')
+user_input = st.text_area("Enter text to analyze sentiment")
 
-# Predict sentiment when button is pressed
-if st.button('Predict Sentiment'):
-    if user_input.strip() != '':
-        sentiment = predict_sentiment(user_input)
-        st.write(f'The sentiment is: *{sentiment}*')
-    else:
-        st.write("Please enter a review to predict.")
-
-# Optional: Add information about the model
-st.sidebar.title("About")
-st.sidebar.write("""
-This app uses a Support Vector Machine (SVM) model trained on Amazon product reviews to classify the sentiment of new reviews as positive, neutral, or negative. The text input is processed using TF-IDF vectorization before being fed into the model.
-""")
+if st.button("Analyze"):
+    sentiment = get_sentiment(user_input)
+    st.write(f"This is a {sentiment} sentiment!")
